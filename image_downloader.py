@@ -11,17 +11,13 @@ import pyperclip
 import sys
 from urllib.parse import urlparse
 
+
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'
 }
 
-now = datetime.datetime.now()
-
-today = str(datetime.datetime(now.year, now.month, now.day, now.hour, now.minute, now.second)).replace(' ', '_').replace(':', '_')
-
-
-def download_image(image_link, image_name):
-    with open(today + '/' + image_name, 'wb') as file_obj:
+def download_image(image_link, folder, image_name):
+    with open(folder + '/' + image_name, 'wb') as file_obj:
         resp = ulib.urlopen(image_link)
         file_obj.write(resp.read())
 
@@ -50,7 +46,7 @@ def get_page_links(bs_obj):
     return anchor_link_list
 
 
-def crawler(url, all_link='n'):
+def crawler(url, folder, all_link='n'):
     response = ''
     too_much = ''
     page_links = []
@@ -86,7 +82,7 @@ def crawler(url, all_link='n'):
             image_srcs = get_image_src(page_link)
 
             if len(image_srcs) > 0:
-                os.makedirs(today, exist_ok=True)
+                os.makedirs(folder, exist_ok=True)
 
             with ThreadPoolExecutor(max_workers=10) as executor:
                 for image_src in image_srcs:
@@ -110,15 +106,14 @@ def crawler(url, all_link='n'):
                             image_link = ''
 
                         if image_link:
-                            executor.submit(download_image, image_link, image_name)
+                            executor.submit(download_image, image_link, folder, image_name)
+#                         if len(downloaded_images) >= 50 and too_much == '':
+#                             too_much = input('Too much images. Want to stop ? <y or n> : ').strip() or 'y'
+#                             if too_much[0] not in ['y', 'Y', 'n', 'N']:
+#                                 too_much = 'y'
 
-                        if len(downloaded_images) >= 50 and too_much == '':
-                            too_much = input('Too much images. Want to stop ? <y or n> : ').strip() or 'y'
-                            if too_much[0] not in ['y', 'Y', 'n', 'N']:
-                                too_much = 'y'
-
-                        if too_much in ['y', 'Y']:
-                            exit()
+#                         if too_much in ['y', 'Y']:
+#                             exit()
 
 
 """
@@ -151,13 +146,15 @@ def get_validated_url_from_clip():
 validated_url = get_validated_url_from_clip()
 
 # checks if clipboard has something and also a cmd arg
-if validated_url and len(sys.argv) == 2:
+if validated_url and len(sys.argv) == 3:
     url = validated_url
-    visit_all = sys.argv[1]
+    folder = sys.argv[1]
+    visit_all = sys.argv[2]
 
 # ask for user input, none are present
 else:
     url = input('Enter a url: ').strip()
+    folder = input("Enter a folder name: ").strip()
     visit_all = input('Want to visit sub-pages? <n or y> : ').strip() or 'n'
 
 
@@ -168,4 +165,4 @@ if visit_all[0] not in ['y', 'Y', 'n', 'N']:
 if url[-1] != '/':
     url += '/'
 
-crawler(url, visit_all[0])
+crawler(url, folder, visit_all[0])
